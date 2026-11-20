@@ -27,9 +27,12 @@ class MainActivity : Activity() {
     private val subdued = Color.rgb(107, 114, 128)
     private val yellow = Color.rgb(255, 204, 0)
     private val track = Color.rgb(228, 229, 233)
-    private val card = Color.rgb(35, 38, 43)
-    private val chip = Color.rgb(51, 55, 61)
-    private val chipStroke = Color.rgb(74, 78, 85)
+    // Recent card is deliberately pale so it does not compete with the number and keypad.
+    private val card = Color.rgb(234, 235, 239)
+    private val chip = Color.rgb(248, 248, 250)
+    private val chipStroke = Color.rgb(222, 224, 228)
+    private val chipText = Color.rgb(88, 94, 106)
+    private val paleYellow = Color.rgb(255, 232, 140)
     private val white = Color.WHITE
 
     private var number = ""
@@ -210,7 +213,7 @@ class MainActivity : Activity() {
         renderRecentRoutes()
     }
 
-    /** Six one-tap shortcuts in one row, newest first; the chip matching the input is yellow. */
+    /** Six one-tap shortcuts in one row, newest first; the chip matching the input is pale yellow. */
     private fun renderRecentRoutes() {
         recentSection.removeAllViews()
         recentSection.visibility = if (recentRoutes.isEmpty()) View.GONE else View.VISIBLE
@@ -220,8 +223,8 @@ class MainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(6), 0, 0, dp(10))
-            addView(icon(R.drawable.ic_clock, yellow), LinearLayout.LayoutParams(dp(22), dp(22)))
-            addView(text("Недавние", 16f, white, true).apply { setPadding(dp(10), 0, 0, 0) })
+            addView(icon(R.drawable.ic_clock, subdued), LinearLayout.LayoutParams(dp(18), dp(18)))
+            addView(text("Недавние", 14f, subdued, true).apply { setPadding(dp(8), 0, 0, 0) })
         })
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -240,12 +243,12 @@ class MainActivity : Activity() {
 
     private fun makeRecentChip(recent: RecentRoute) = LinearLayout(this).apply {
         val active = recent.transport == transport && recent.number == number
-        val textColor = if (active) ink else white
+        val textColor = if (active) ink else chipText
         orientation = LinearLayout.VERTICAL
         gravity = Gravity.CENTER
         isClickable = true
         background = GradientDrawable().apply {
-            setColor(if (active) yellow else chip)
+            setColor(if (active) paleYellow else chip)
             if (!active) setStroke(dp(1), chipStroke)
             cornerRadius = dp(12).toFloat()
         }
