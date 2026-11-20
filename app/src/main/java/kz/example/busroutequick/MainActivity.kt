@@ -6,16 +6,20 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.InsetDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.RadioButton
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
@@ -24,7 +28,7 @@ import android.widget.Toast
 class MainActivity : Activity() {
     private val bg = Color.rgb(242, 243, 245)
     private val ink = Color.rgb(26, 28, 32)
-    private val subdued = Color.rgb(107, 114, 128)
+    private val subdued = Color.rgb(95, 101, 114) // >= 4.5:1 on bg and on the recent card
     private val yellow = Color.rgb(255, 204, 0)
     private val track = Color.rgb(228, 229, 233)
     // Recent card is deliberately pale so it does not compete with the number and keypad.
@@ -102,10 +106,10 @@ class MainActivity : Activity() {
         }
         busButton = makeSegment("Автобус", R.drawable.ic_bus) {
             transport = Transport.BUS; updateScreen()
-        }
+        }.apply { announceAs(RadioButton::class.java) { transport == Transport.BUS } }
         trolleyButton = makeSegment("Троллейбус", R.drawable.ic_trolleybus) {
             transport = Transport.TROLLEYBUS; updateScreen()
-        }
+        }.apply { announceAs(RadioButton::class.java) { transport == Transport.TROLLEYBUS } }
         selector.addView(busButton, LinearLayout.LayoutParams(0, dp(52), 1f))
         selector.addView(trolleyButton, LinearLayout.LayoutParams(0, dp(52), 1f))
         content.addView(selector)
@@ -183,6 +187,7 @@ class MainActivity : Activity() {
             addView(icon(R.drawable.ic_place, ink), LinearLayout.LayoutParams(dp(26), dp(26)))
             addView(openLabel, LinearLayout.LayoutParams(0, dp(30), 1f))
             addView(icon(R.drawable.ic_arrow_forward, ink), LinearLayout.LayoutParams(dp(24), dp(24)))
+            announceAs(Button::class.java)
         }
         content.addView(openButton, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, dp(62)
@@ -261,8 +266,11 @@ class MainActivity : Activity() {
         }
         addView(autoSized(recent.number, 20, textColor, true),
             LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(26)))
-        addView(autoSized(recent.transport.searchWord, 11, textColor, false),
+        // Short label keeps the minimum size readable in six narrow slots; TalkBack reads the full name.
+        val label = if (recent.transport == Transport.BUS) "автобус" else "тролл."
+        addView(autoSized(label, 11, textColor, false),
             LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(15)))
+        announceAs(Button::class.java)
     }
 
     /**
@@ -275,7 +283,7 @@ class MainActivity : Activity() {
             maxLines = 1
             includeFontPadding = false
             setPadding(dp(2), 0, dp(2), 0)
-            setAutoSizeTextTypeUniformWithConfiguration(7, maxDp, 1, TypedValue.COMPLEX_UNIT_DIP)
+            setAutoSizeTextTypeUniformWithConfiguration(9, maxDp, 1, TypedValue.COMPLEX_UNIT_DIP)
         }
 
     private fun onRouteOpened(openedTransport: Transport, openedNumber: String) {
@@ -380,19 +388,44 @@ class MainActivity : Activity() {
         addView(numberView, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT
         ))
+        // 48dp touch target; the grey tile is inset so it still looks 40dp.
         clearNumberButton = icon(R.drawable.ic_close, ink).apply {
-            background = rounded(track, dp(10).toFloat())
-            setPadding(dp(8), dp(8), dp(8), dp(8))
+            background = InsetDrawable(rounded(track, dp(10).toFloat()), dp(4))
+            setPadding(dp(12), dp(12), dp(12), dp(12))
             contentDescription = "Очистить номер"
             setOnClickListener { number = ""; updateScreen() }
+            announceAs(Button::class.java)
         }
-        addView(clearNumberButton, FrameLayout.LayoutParams(dp(40), dp(40),
-            Gravity.END or Gravity.CENTER_VERTICAL).apply { marginEnd = dp(18) })
+        addView(clearNumberButton, FrameLayout.LayoutParams(dp(48), dp(48),
+            Gravity.END or Gravity.CENTER_VERTICAL).apply { marginEnd = dp(14) })
     }
 
     private fun icon(iconRes: Int, tint: Int) = ImageView(this).apply {
         setImageResource(iconRes)
         setColorFilter(tint)
+    }
+
+    /**
+     * Composite views (LinearLayout/ImageView) lost the Button role of the old widgets.
+     * Report [role] to accessibility services, plus checked state for radio-like segments,
+     * and keep inner icons/labels out of the tree so the item is announced once.
+     */
+    private fun View.announceAs(role: Class<*>, checked: (() -> Boolean)? = null) {
+        if (this is ViewGroup) {
+            for (i in 0 until childCount) {
+                getChildAt(i).importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }
+        }
+        accessibilityDelegate = object : View.AccessibilityDelegate() {
+            override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfo) {
+                super.onInitializeAccessibilityNodeInfo(host, info)
+                info.className = role.name
+                if (checked != null) {
+                    info.isCheckable = true
+                    info.isChecked = checked()
+                }
+            }
+        }
     }
 
     private fun text(value: String, sizeSp: Float, color: Int, bold: Boolean = false) =
