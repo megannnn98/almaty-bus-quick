@@ -31,4 +31,12 @@ bus	79	https://evil.example/a	подмена
         assertNull(RouteCatalog.resolve(Transport.BUS, "", emptyList()))
         assertEquals(1, RouteCatalog.parseTsv(data).size)
     }
+
+    @Test fun `rejects zero and numbers with a leading zero`() {
+        assertNull(RouteCatalog.resolve(Transport.BUS, "0", emptyList()))
+        assertNull(RouteCatalog.resolve(Transport.BUS, "05", emptyList()))
+        assertNull(RouteCatalog.resolve(Transport.TROLLEYBUS, "00", emptyList()))
+        assertNotNull(RouteCatalog.resolve(Transport.BUS, "10", emptyList()))
+        assertNotNull(RouteCatalog.resolve(Transport.BUS, "105", emptyList()))
+    }
 }

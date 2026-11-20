@@ -44,6 +44,7 @@ class MainActivity : Activity() {
     private lateinit var entries: List<RouteEntry>
     private lateinit var numberView: TextView
     private lateinit var clearNumberButton: ImageView
+    private lateinit var zeroKey: View
     private lateinit var hintView: TextView
     private lateinit var openButton: LinearLayout
     private lateinit var openLabel: TextView
@@ -157,10 +158,14 @@ class MainActivity : Activity() {
                     when (key) {
                         "C" -> number = ""
                         "⌫" -> number = number.dropLast(1)
-                        else -> if (number.length < 3) number += key
+                        // Route numbers never start with 0 ("0", "05" are not routes).
+                        else -> if (number.length < 3 && !(key == "0" && number.isEmpty())) {
+                            number += key
+                        }
                     }
                     updateScreen()
                 }
+                if (key == "0") zeroKey = button
                 if (key == "⌫") button.setOnLongClickListener {
                     number = ""; updateScreen(); true
                 }
@@ -203,6 +208,8 @@ class MainActivity : Activity() {
     private fun updateScreen() {
         numberView.text = number.ifEmpty { "—" }
         clearNumberButton.visibility = if (number.isEmpty()) View.INVISIBLE else View.VISIBLE
+        zeroKey.isEnabled = number.isNotEmpty()
+        zeroKey.alpha = if (zeroKey.isEnabled) 1f else 0.4f
         val target = RouteCatalog.resolve(transport, number, entries)
         hintView.text = when {
             target == null -> "Введите номер маршрута"

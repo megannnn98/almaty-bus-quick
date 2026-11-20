@@ -33,4 +33,9 @@ class RouteHistoryTest {
         assertEquals(emptyList<RecentRoute>(), RouteHistory.decode(null))
         assertEquals(emptyList<RecentRoute>(), RouteHistory.record(emptyList(), bus("abc")))
     }
+
+    @Test fun `drops zero and leading-zero numbers`() {
+        assertEquals(listOf(bus("10")), RouteHistory.decode("b0,t05,b10"))
+        assertEquals(listOf(bus("12")), RouteHistory.record(listOf(bus("12")), bus("0")))
+    }
 }

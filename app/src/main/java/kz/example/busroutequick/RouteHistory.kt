@@ -5,7 +5,7 @@ data class RecentRoute(val transport: Transport, val number: String)
 /** Newest first; routes are unique by both transport type and number. */
 object RouteHistory {
     private const val LIMIT = 6
-    private val numberPattern = Regex("[0-9]{1,3}")
+    private val numberPattern = Regex("[1-9][0-9]{0,2}") // 1..999, no leading zero
 
     fun record(existing: List<RecentRoute>, opened: RecentRoute): List<RecentRoute> {
         if (!numberPattern.matches(opened.number)) return existing.take(LIMIT)

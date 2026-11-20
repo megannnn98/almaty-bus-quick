@@ -21,7 +21,7 @@ data class RouteTarget(
 )
 
 object RouteCatalog {
-    private val numberPattern = Regex("[0-9]{1,3}")
+    private val numberPattern = Regex("[1-9][0-9]{0,2}") // 1..999, no leading zero
     private val directUrlPattern = Regex("https://2gis\\.kz/almaty/route/[0-9]+")
 
     /** Строгий формат TSV, чтобы URL не подменялся непроверенным адресом. */
