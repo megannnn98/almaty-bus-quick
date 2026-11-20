@@ -110,7 +110,10 @@ class MainActivity : Activity() {
             listOf("Очистить", "0", "⌫")
         )
         rows.forEach { keys ->
-            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                isBaselineAligned = false
+            }
             keys.forEach { key ->
                 val button = makeButton(key, if (key == "Очистить") 14f else 27f, false)
                 button.setOnClickListener {
@@ -169,7 +172,10 @@ class MainActivity : Activity() {
             setPadding(dp(6), dp(4), 0, dp(4))
         })
         recentRoutes.chunked(3).forEach { chunk ->
-            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                isBaselineAligned = false
+            }
             repeat(3) { index ->
                 val recent = chunk.getOrNull(index)
                 val view: View = if (recent == null) {
