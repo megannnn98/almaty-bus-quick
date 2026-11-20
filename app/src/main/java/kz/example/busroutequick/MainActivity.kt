@@ -32,12 +32,17 @@ class MainActivity : Activity() {
     private lateinit var openButton: Button
     private lateinit var busButton: Button
     private lateinit var trolleyButton: Button
+    private lateinit var recentSection: LinearLayout
+    private var recentRoutes: List<RecentRoute> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         entries = runCatching {
             assets.open("routes.tsv").bufferedReader().use { RouteCatalog.parseTsv(it.readText()) }
         }.getOrDefault(emptyList())
+        recentRoutes = RouteHistory.decode(
+            getSharedPreferences("recent_routes", MODE_PRIVATE).getString("items", null)
+        )
         number = savedInstanceState?.getString("number").orEmpty()
         transport = if (savedInstanceState?.getString("transport") == "trolleybus") {
             Transport.TROLLEYBUS
@@ -95,6 +100,9 @@ class MainActivity : Activity() {
         }
         content.addView(hintView)
 
+        recentSection = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        content.addView(recentSection)
+
         val rows = listOf(
             listOf("1", "2", "3"),
             listOf("4", "5", "6"),
@@ -148,10 +156,62 @@ class MainActivity : Activity() {
         openButton.text = if (target?.isDirectRoute == false) "Найти в 2ГИС" else "Открыть маршрут в 2ГИС"
         setSelected(busButton, transport == Transport.BUS)
         setSelected(trolleyButton, transport == Transport.TROLLEYBUS)
+        renderRecentRoutes()
+    }
+
+    /** Six one-tap shortcuts, newest first. */
+    private fun renderRecentRoutes() {
+        recentSection.removeAllViews()
+        recentSection.visibility = if (recentRoutes.isEmpty()) View.GONE else View.VISIBLE
+        if (recentRoutes.isEmpty()) return
+
+        recentSection.addView(text("Последние маршруты", 14f, subdued, true).apply {
+            setPadding(dp(6), dp(4), 0, dp(4))
+        })
+        recentRoutes.chunked(3).forEach { chunk ->
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            repeat(3) { index ->
+                val recent = chunk.getOrNull(index)
+                val view: View = if (recent == null) {
+                    View(this)
+                } else {
+                    makeButton(
+                        if (recent.transport == Transport.BUS) "Авт. ${recent.number}"
+                        else "Тр. ${recent.number}",
+                        16f,
+                        false
+                    ).apply {
+                        contentDescription =
+                            "${recent.transport.caption} ${recent.number}, открыть в 2ГИС"
+                        setOnClickListener {
+                            transport = recent.transport
+                            number = recent.number
+                            updateScreen()
+                            openRoute()
+                        }
+                    }
+                }
+                row.addView(view, weighted(46))
+            }
+            recentSection.addView(row)
+        }
+    }
+
+    private fun onRouteOpened(openedTransport: Transport, openedNumber: String) {
+        recentRoutes = RouteHistory.record(
+            recentRoutes, RecentRoute(openedTransport, openedNumber)
+        )
+        getSharedPreferences("recent_routes", MODE_PRIVATE).edit()
+            .putString("items", RouteHistory.encode(recentRoutes))
+            .apply()
+        number = ""
+        updateScreen()
     }
 
     private fun openRoute() {
-        val target = RouteCatalog.resolve(transport, number, entries) ?: return
+        val openedTransport = transport
+        val openedNumber = number
+        val target = RouteCatalog.resolve(openedTransport, openedNumber, entries) ?: return
         // 2ГИС документирует dgis://2gis.ru/... для Android. Этот переход нужно
         // проверить на реальном телефоне; ниже есть fallback на обычный HTTPS.
         if (target.isDirectRoute) {
@@ -160,6 +220,7 @@ class MainActivity : Activity() {
                 Uri.parse("dgis://2gis.ru/$path")).setPackage("ru.dublgis.dgismobile")
             try {
                 startActivity(nativeIntent)
+                onRouteOpened(openedTransport, openedNumber)
                 return
             } catch (_: ActivityNotFoundException) {
                 // Нет 2ГИС или текущая версия не принимает такой адрес.
@@ -167,6 +228,7 @@ class MainActivity : Activity() {
         }
         try {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(target.url)))
+            onRouteOpened(openedTransport, openedNumber)
         } catch (_: ActivityNotFoundException) {
             Toast.makeText(this, "Не найдено приложение для открытия ссылки", Toast.LENGTH_LONG).show()
         }
@@ -177,6 +239,11 @@ class MainActivity : Activity() {
             text = label
             textSize = textSizeSp
             isAllCaps = false
+            gravity = Gravity.CENTER
+            includeFontPadding = false
+            minHeight = 0
+            minWidth = 0
+            setPadding(0, 0, 0, 0)
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
             setTextColor(if (primary) white else ink)
             background = rounded(if (primary) blue else white, dp(13).toFloat())
