@@ -1,0 +1,153 @@
+/* Same palette and sizes as the Android app (MainActivity.kt). */
+:root {
+  color-scheme: light;
+  --bg: #F2F3F5;
+  --ink: #1A1C20;
+  --subdued: #5F6572;      /* >= 4.5:1 on --bg and on --card */
+  --yellow: #FFCC00;
+  --pale-yellow: #FFE88C;
+  --track: #E4E5E9;
+  --white: #FFFFFF;
+  --card: #EAEBEF;
+  --chip: #F8F8FA;
+  --chip-stroke: #DEE0E4;
+  --chip-text: #585E6A;
+  --shadow: 0 1px 2px rgba(26, 28, 32, 0.12), 0 1px 1px rgba(26, 28, 32, 0.06);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+button, a { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+.icon { width: 24px; height: 24px; fill: currentColor; flex: none; }
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  /* Fill the screen so the keypad can shrink on short viewports (Safari with toolbars). */
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding:
+    calc(12px + env(safe-area-inset-top))
+    calc(18px + env(safe-area-inset-right))
+    calc(16px + env(safe-area-inset-bottom))
+    calc(18px + env(safe-area-inset-left));
+}
+
+/* Header */
+.header { display: flex; align-items: center; gap: 14px; padding: 0 0 12px 4px; }
+.logo {
+  width: 52px; height: 52px; border-radius: 14px; background: var(--yellow);
+  display: grid; place-items: center;
+}
+.logo .icon { width: 30px; height: 30px; }
+h1 { font-size: 24px; line-height: 1.15; margin: 0; }
+.subtitle { font-size: 14px; color: var(--subdued); margin: 2px 0 0; }
+
+/* Recent routes: deliberately pale so it does not compete with the number and keypad. */
+.recent {
+  background: var(--card); border-radius: 22px; padding: 14px 10px 12px; margin-bottom: 14px;
+}
+.recent[hidden] { display: none; }
+.recent h2 {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; color: var(--subdued); margin: 0 0 10px 6px;
+}
+.recent h2 .icon { width: 18px; height: 18px; }
+.chips { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.chip {
+  height: 58px; border-radius: 12px; border: 1px solid var(--chip-stroke);
+  background: var(--chip); color: var(--chip-text); text-decoration: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  overflow: hidden; white-space: nowrap;
+}
+.chip b { font-size: clamp(14px, 5vw, 20px); line-height: 1.2; }
+.chip span { font-size: clamp(9px, 2.8vw, 11px); }
+.chip.active { background: var(--pale-yellow); border-color: var(--pale-yellow); color: var(--ink); }
+
+/* Transport selector */
+.segments {
+  display: flex; background: var(--track); border-radius: 28px; padding: 4px;
+}
+.segment {
+  flex: 1; height: 52px; border: 0; border-radius: 24px; background: transparent;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 16px; font-weight: 700;
+}
+.segment[aria-checked="true"] { background: var(--yellow); }
+
+/* Number field */
+.field {
+  position: relative; height: 88px; margin-top: 16px;
+  background: var(--white); border: 2px solid var(--yellow); border-radius: 22px;
+  display: grid; place-items: center;
+}
+.number { font-size: 64px; font-weight: 700; line-height: 1; letter-spacing: -1px; }
+.clear {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  width: 48px; height: 48px; padding: 0; border: 0; background: transparent;
+  display: grid; place-items: center;
+}
+/* 48px touch target, 40px visible tile. */
+.clear::before {
+  content: ""; position: absolute; inset: 4px; border-radius: 10px; background: var(--track);
+}
+.clear .icon { position: relative; }
+.clear[hidden] { display: grid; visibility: hidden; }
+
+.hint {
+  min-height: 36px; margin: 0; padding: 6px 8px;
+  text-align: center; font-size: clamp(12px, 3.7vw, 14px); color: var(--subdued);
+}
+
+/* Keypad: rows are 58px when there is room and shrink down to 44px before the page scrolls. */
+.keypad {
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr); gap: 6px 8px;
+  flex: 1 1 0; min-height: calc(4 * 44px + 3 * 6px); max-height: calc(4 * 58px + 3 * 6px);
+}
+.key {
+  border: 0; border-radius: 13px; background: var(--white); box-shadow: var(--shadow);
+  font-size: 30px; font-weight: 500;
+  display: grid; place-items: center;
+  user-select: none; -webkit-user-select: none; touch-action: manipulation;
+}
+.key-muted { background: var(--track); }
+.key .icon { width: 30px; height: 30px; }
+.key:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
+.key:not(:disabled):active, .segment:active, .open:not([aria-disabled="true"]):active { filter: brightness(0.94); }
+
+/* Open in 2ГИС */
+.open {
+  flex: none; height: 62px; margin: 14px 4px 0; padding: 0 16px; border-radius: 20px;
+  background: var(--yellow); box-shadow: var(--shadow); text-decoration: none;
+  display: flex; align-items: center; gap: 8px;
+}
+.open .icon:first-child { width: 26px; height: 26px; }
+#open-label {
+  flex: 1; text-align: center; font-size: clamp(14px, 4.2vw, 19px); font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.open[aria-disabled="true"] { opacity: 0.45; box-shadow: none; cursor: default; }
+
+.footnote { font-size: 12px; color: var(--subdued); text-align: center; margin: 12px 6px 0; }
+/* On short screens the keypad and the open button matter more than the note. */
+@media (max-height: 740px) {
+  .footnote { display: none; }
+  .field { height: 76px; margin-top: 12px; }
+  .number { font-size: 56px; }
+  .chip { height: 50px; }
+}
+
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
